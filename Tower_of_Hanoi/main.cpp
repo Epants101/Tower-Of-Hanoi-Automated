@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <utility>
 
 const Color rodColour = BEIGE;
 const Color baseColour = DARKBROWN;
@@ -12,7 +13,7 @@ const Color selectedDiskColour = GREEN;
 
 const std::string screenshotSaveDirectory = "C:\\Users\\epant\\Pictures\\Tower Of Hanoi Pics";
 
-const unsigned int numberOfRings = 25;
+const unsigned int numberOfRings = 30;
 unsigned int moveNumber = 0;
 
 enum ROD
@@ -40,7 +41,7 @@ std::array<Rectangle, 3> generateBoundingBoxes(std::array<int, 3> rodXs, int rod
 int findSelectedDisk(int rod, std::array<unsigned int, numberOfRings> disks);
 
 //Ai functions
-std::vector<std::array<int, 2>> moveStack(int from, int to, int auxiliary, unsigned int size);
+void moveStack(char from, char to, char auxiliary, unsigned int size, std::vector<std::pair<char, char>>* moves);
 
 int main(void)
 {
@@ -78,12 +79,15 @@ int main(void)
     }
 
     //Solution Stuff
-    std::vector<std::array<int, 2>> solution = moveStack(ROD::LEFT, ROD::RIGHT, ROD::MIDDLE, 1);
+    std::vector<std::pair<char, char>>* solution = new std::vector<std::pair<char, char>>();
+    moveStack(ROD::LEFT, ROD::RIGHT, ROD::MIDDLE, 1, solution);
     std::string solutionString = "n(rings),n(moves)\n";
     for (int i = 1; i <= numberOfRings; i++)
     {
-        solution = moveStack(ROD::LEFT, ROD::RIGHT, ROD::MIDDLE, i);
-        solutionString += std::to_string(i) + "," + std::to_string(solution.size()) + "\n";
+        delete solution;
+        solution = new std::vector<std::pair<char, char>>();
+        moveStack(ROD::LEFT, ROD::RIGHT, ROD::MIDDLE, i, solution);
+        solutionString += std::to_string(i) + "," + std::to_string(solution->size()) + "\n";
         std::cout << solutionString;
     }
     SaveFileText("data.csv", strdup(solutionString.c_str()));
@@ -181,9 +185,9 @@ int main(void)
         EndDrawing();
         //----------------------------------------------------------------------------------
 
-        if (moveNumber < solution.size())
+        if (moveNumber < solution->size())
         {
-            disks = moveDisk(solution[moveNumber][0], solution[moveNumber][1], disks);
+            disks = moveDisk(((*solution)[moveNumber]).first, ((*solution)[moveNumber]).second, disks);
         }
     }
 
@@ -304,22 +308,19 @@ int findSelectedDisk(int rod, std::array<unsigned int, numberOfRings> disks)
     return disk;
 }
 
-std::vector<std::array<int, 2>> moveStack(int from, int to, int auxiliary, unsigned int size)
+void moveStack(char from, char to, char auxiliary, unsigned int size, std::vector<std::pair<char, char>>* moves)
 {
-    std::vector<std::array<int, 2>> moves;
     if (size < 2)
     {
-        moves.push_back({ from, to });
+        moves->push_back({ from, to });
     }
     else
     {
         //Move all but the bottom to the middle
-        moves = moveStack(from, auxiliary, to, size - 1);
+        moveStack(from, auxiliary, to, size - 1, moves);
         //move the bottom to the right
-        moves.push_back({ from, to });
+        moves->push_back({ from, to });
         //move the middle on top of it
-        std::vector<std::array<int, 2>> movesB = moveStack(auxiliary, to, from, size - 1);
-        moves.insert(moves.end(), movesB.begin(), movesB.end());
+        moveStack(auxiliary, to, from, size - 1, moves);
     }
-    return moves;
 }
